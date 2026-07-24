@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Tab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&family=Orbitron:wght@600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        #anim-wrap {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 0;
+        }
+
+        #anim-pre {
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1em;
+            letter-spacing: 0.05em;
+            white-space: pre;
+            text-shadow: 0 0 6px #00ff41;
+        }
+
+        #shortcuts {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .shortcut {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            background-color: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+            text-decoration: none;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .shortcut:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 16px rgba(0, 255, 65, 0.7);
+        }
+
+        .shortcut img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        #clock {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #2a2a2a;
+            font-size: 36px;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: none;
+            z-index: 1;
+        }
+
+        #anim-select {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: transparent;
+            color: rgba(0, 255, 65, 0.12);
+            border: 1px solid rgba(0, 255, 65, 0.06);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            outline: none;
+            cursor: pointer;
+            z-index: 2;
+            padding: 2px 6px;
+            transition: color 0.4s, border-color 0.4s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        #anim-select:hover, #anim-select:focus {
+            color: rgba(0, 255, 65, 0.75);
+            border-color: rgba(0, 255, 65, 0.4);
+        }
+
+        #anim-select option {
+            background: #000;
+            color: #00ff41;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="anim-wrap">
+        <pre id="anim-pre"></pre>
+    </div>
+
+    <div id="shortcuts">
+        <a href="https://www.youtube.com" class="shortcut" target="_blank">
+            <img src="https://blog.youtube/static/blog_youtube/images/youtube_social_200x200.png" alt="YouTube">
+        </a>
+        <a href="https://www.github.com" class="shortcut" target="_blank">
+            <img src="https://github.com/fluidicon.png" alt="GitHub">
+        </a>
+        <a href="https://192.168.15.29:8006" class="shortcut" target="_blank">
+            <img src="https://192.168.15.29:8006/pve2/images/logo-128.png" alt="Proxmox">
+        </a>
+        <a href="http://192.168.15.115/" class="shortcut" target="_blank">
+            <img src="assets/Adguard_icon.png" alt="AdGuard">
+        </a>
+    </div>
+
+    <div id="clock">--:--</div>
+
+    <!--
+    <select id="anim-select">
+        <option value="cube">cube</option>
+        <option value="skull">skull</option>
+    </select>
+    -->
+
+    <script src="clock.js"></script>
+    <script src="cube.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
