@@ -1,149 +1,714 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Tab</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&family=Orbitron:wght@600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        /* Aetheris tokens */
+        :root {
+            --void: #030303;
+            --panel: #080808;
+            --mint: #00ffa3;
+            --danger: #ff4d6a;
+            --warn: #ffb547;
+            --text: #e0e0e0;
+            --sub: #888888;
+            --muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
+            height: 100vh;
             overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
+            background-color: var(--void);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
-        #anim-wrap {
+        a { color: inherit; text-decoration: none; }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Tech grid backdrop */
+        #grid {
             position: fixed;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 100vh;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse at 70% 45%, #000 20%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at 70% 45%, #000 20%, transparent 75%);
+        }
+
+        /* HUD corners */
+        .hud {
+            position: fixed;
+            width: 18px;
+            height: 18px;
+            border: 0 solid rgba(255, 255, 255, 0.5);
+            z-index: 3;
+            pointer-events: none;
+        }
+        .hud.tl { top: 16px; left: 16px; border-top-width: 1px; border-left-width: 1px; }
+        .hud.tr { top: 16px; right: 16px; border-top-width: 1px; border-right-width: 1px; }
+        .hud.bl { bottom: 16px; left: 16px; border-bottom-width: 1px; border-left-width: 1px; }
+        .hud.br { bottom: 16px; right: 16px; border-bottom-width: 1px; border-right-width: 1px; }
+
+        /* ASCII scene */
+        /* Fills the space beside the clock, above the shortcuts line; main.js scales the cube to fit */
+        #anim-wrap {
+            flex: 1;
+            min-width: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 0;
+            justify-content: flex-end;
+            /* Reach into main's right padding; the blank margin inside the ASCII frame keeps the cube off the edge */
+            margin-right: -72px;
+            overflow: hidden;
+            pointer-events: none;
         }
 
         #anim-pre {
-            color: #00ff41;
+            /* Shrink toward the right edge so the scaled cube stays pinned right, leaving the center clear */
+            transform-origin: right center;
+            margin: 0;
+            color: var(--mint);
             font-family: 'Courier New', monospace;
             font-size: 15px;
             line-height: 1em;
             letter-spacing: 0.05em;
             white-space: pre;
-            text-shadow: 0 0 6px #00ff41;
+            opacity: 0.75;
+            text-shadow: 0 0 8px rgba(0, 255, 163, 0.45);
+        }
+
+        /* Hero */
+        main {
+            position: relative;
+            z-index: 2;
+            height: 100vh;
+            padding: 72px 72px 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hero {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            gap: 40px;
+            margin-bottom: 28px;
+        }
+
+        .hero header {
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+            width: clamp(360px, 34vw, 560px);
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Negative left margins cancel each font's side bearing so the ink lines up with the date */
+        #clock {
+            margin: 0 0 0 -0.047em;
+            font-size: clamp(96px, 13vw, 200px);
+            font-weight: 600;
+            line-height: 0.9;
+            letter-spacing: -0.06em;
+            color: #fff;
+        }
+
+        #weekday {
+            margin: 24px 0 0 -0.04em;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(32px, 4vw, 60px);
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--mint);
+            text-shadow: 0 0 12px rgba(0, 255, 163, 0.35);
+        }
+
+        #date {
+            margin: 24px 0 0;
+            max-width: 420px;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        /* Proxmox panel, pinned to the bottom of the clock column */
+        .pve {
+            margin-top: auto;
+            padding-top: 24px;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pve .section-head { margin-bottom: 16px; }
+        .pve .section-head span.is-error { color: var(--danger); }
+
+        .pve-meters {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .pve-meter-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sub);
+            white-space: nowrap;
+        }
+
+        .pve-meter-value {
+            color: #fff;
+            letter-spacing: 0;
+        }
+
+        .pve-meter-track {
+            height: 2px;
+            background: #1a1a1a;
+        }
+
+        .pve-meter-fill {
+            height: 100%;
+            background: var(--mint);
+            box-shadow: 0 0 8px rgba(0, 255, 163, 0.5);
+            transition: width 0.6s var(--ease);
+        }
+
+        /* Three columns of compact rows; an opened row takes the full width */
+        .pve-guests {
+            margin-top: 16px;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-auto-flow: row dense;
+            align-content: start;
+            column-gap: 16px;
+        }
+        .pve-guests:empty { display: none; }
+        .pve-guests::-webkit-scrollbar { width: 5px; }
+        .pve-guests::-webkit-scrollbar-track { background: transparent; }
+        .pve-guests::-webkit-scrollbar-thumb { background: #333; }
+        .pve-guests::-webkit-scrollbar-thumb:hover { background: var(--mint); }
+
+        /* An opened guest replaces the whole list until it is closed */
+        .pve-guests.has-open .pve-guest:not(.is-open) { display: none; }
+        .pve-guest.is-open { grid-column: 1 / -1; }
+
+        .pve-guest-head {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            border: 0;
+            background: none;
+            font: inherit;
+            font-size: 12px;
+            text-align: left;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .pve-dot {
+            flex-shrink: 0;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 8px rgba(102, 224, 163, 0.8);
+        }
+
+        .pve-guest-name {
+            min-width: 0;
+            color: #fff;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.3s var(--ease);
+        }
+        .pve-guest-head:hover .pve-guest-name,
+        .pve-guest.is-open .pve-guest-name { color: var(--mint); }
+        /* Indent the open row like its details so the status dot lines up with ID, Histórico and the charts */
+        .pve-guest.is-open .pve-guest-head { padding: 6px 0 6px 16px; font-size: 18px; }
+        .pve-guest.is-open .pve-guest-name { font-weight: 600; letter-spacing: -0.01em; }
+
+        /* Close button: a red take on the mint period chips (outline + faint wash + glow on hover) */
+        .pve-close {
+            display: none;
+            margin-left: auto;
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 77, 106, 0.35);
+            background: rgba(255, 77, 106, 0.06);
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--danger);
+            transition: background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), color 0.3s var(--ease);
+        }
+        .pve-guest.is-open .pve-close { display: block; cursor: pointer; }
+        .pve-guest.is-open .pve-guest-head { cursor: default; }
+        .pve-close:hover {
+            color: #fff;
+            border-color: var(--danger);
+            background: rgba(255, 77, 106, 0.18);
+            box-shadow: 0 0 12px rgba(255, 77, 106, 0.35);
+        }
+
+        .pve-guest-details {
+            display: none;
+            padding: 0 0 0 16px;
+        }
+        .pve-guest.is-open .pve-guest-details { display: block; }
+
+        .pve-guest-info {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+
+        .pve-detail-label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sub);
+        }
+
+        .pve-detail-value {
+            font-size: 11px;
+            color: #fff;
+        }
+
+        /* 80%+ of CPU, RAM or disk: amber light on the guest, the meter and the chart readout */
+        .pve-guest.is-high .pve-dot { background: var(--warn); box-shadow: 0 0 8px rgba(255, 181, 71, 0.7); }
+        .pve-meter.is-high .pve-meter-fill { background: var(--warn); box-shadow: 0 0 8px rgba(255, 181, 71, 0.5); }
+        .pve-meter.is-high .pve-meter-value, .pve-chart-title b.is-high { color: var(--warn); }
+
+        /* Pushed to the right edge of the item, in line with the meter values above */
+        .pve-alert {
+            display: none;
+            flex-shrink: 0;
+            margin-left: auto;
+            width: 14px;
+            height: 14px;
+            place-items: center;
+            border: 1px solid rgba(255, 181, 71, 0.5);
+            background: rgba(255, 181, 71, 0.1);
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--warn);
+            box-shadow: 0 0 8px rgba(255, 181, 71, 0.35);
+            cursor: help;
+        }
+        .pve-guest.is-high .pve-alert { display: grid; }
+        /* With the alert already taking the free space, Fechar just follows it */
+        .pve-guest.is-high .pve-close { margin-left: 0; }
+
+        .pve-guest.is-stopped .pve-dot { background: var(--danger); box-shadow: 0 0 8px rgba(255, 77, 106, 0.6); }
+        .pve-guest.is-stopped .pve-guest-name { color: var(--sub); }
+
+        /* History chart inside an opened guest */
+        .pve-history { margin-top: 14px; padding-bottom: 4px; }
+
+        .pve-history-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sub);
+        }
+
+        .pve-periods { display: flex; gap: 4px; }
+        .pve-periods button {
+            padding: 2px 7px;
+            border: 1px solid var(--border);
+            background: none;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: var(--sub);
+            cursor: pointer;
+            transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+        }
+        .pve-periods button:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+        .pve-periods button.is-active { color: var(--mint); border-color: rgba(0, 255, 163, 0.3); background: rgba(0, 255, 163, 0.05); }
+
+        /* An opened guest takes over the whole clock column: clock, date and node meters step aside */
+        .hero header:has(.pve-guests.has-open) > :is(#clock, #weekday, #date) { display: none; }
+        .hero header:has(.pve-guests.has-open) .pve { flex: 1; margin-top: 0; padding-top: 0; }
+
+        /* Dark backdrop behind the whole clock column while a guest is open: it bleeds to the
+           page edges and fades out on the right, between the charts and the cube.
+           Texture = film grain (SVG noise) + a faint mint glow + a fine dot matrix; the mask does the fade */
+        .hero header::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            top: -72px;
+            bottom: -28px;
+            left: -72px;
+            right: -160px;
+            background-color: rgba(3, 3, 3, 0.96);
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+                radial-gradient(ellipse at 20% 0%, rgba(0, 255, 163, 0.05), transparent 60%),
+                radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 160px 160px, 100% 100%, 6px 6px;
+            -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 96px), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 96px), transparent);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s var(--ease);
+        }
+        /* While open the backdrop takes clicks, so clicking it counts as inside the node area */
+        .hero header:has(.pve-guests.has-open)::before { opacity: 1; pointer-events: auto; }
+        .pve:has(.pve-guests.has-open) > #pve-meters { display: none; }
+        .pve-guests.has-open { flex: 1; display: flex; flex-direction: column; }
+        .pve-guest.is-open, .pve-guest.is-open .pve-guest-details, .pve-guest.is-open .pve-history {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pve-charts {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: repeat(3, minmax(64px, 1fr));
+            gap: 22px;
+        }
+
+        /* Title sits under its chart, right below the chart's baseline */
+        .pve-chart-block { min-height: 0; display: flex; flex-direction: column; }
+
+        .pve-chart-title {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sub);
+        }
+        .pve-chart-title span { color: var(--mint); }
+        .pve-chart-title b { font-weight: 400; color: #fff; letter-spacing: 0; }
+
+        .pve-chart {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            border-bottom: 1px solid var(--border);
+            cursor: crosshair;
+        }
+        .pve-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+        /* Hover readout: guide line, dot on the curve and a small time · value tag */
+        .pve-hover-line, .pve-hover-dot, .pve-hover-tip {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s var(--ease);
+        }
+        .pve-chart.is-hover :is(.pve-hover-line, .pve-hover-dot, .pve-hover-tip) { opacity: 1; }
+
+        .pve-hover-line {
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .pve-hover-dot {
+            width: 7px;
+            height: 7px;
+            margin: -3.5px 0 0 -3.5px;
+            border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 10px rgba(0, 255, 163, 0.9);
+        }
+
+        .pve-hover-tip {
+            top: 0;
+            margin-left: 8px;
+            padding: 3px 7px;
+            border: 1px solid rgba(0, 255, 163, 0.3);
+            background: rgba(3, 3, 3, 0.92);
+            font-size: 10px;
+            color: #fff;
+            white-space: nowrap;
+        }
+        .pve-hover-tip.is-left { transform: translateX(calc(-100% - 16px)); }
+
+        .pve-chart-grid { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; vector-effect: non-scaling-stroke; }
+        .pve-chart-line {
+            fill: none;
+            stroke: var(--mint);
+            stroke-width: 1.5;
+            stroke-linejoin: round;
+            vector-effect: non-scaling-stroke;
+            filter: drop-shadow(0 0 3px rgba(0, 255, 163, 0.6));
+        }
+
+        .pve-chart-msg {
+            height: 100%;
+            display: grid;
+            place-items: center;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sub);
+        }
+        .pve-chart-msg.is-error { color: var(--danger); }
+
+
+        /* Shortcuts */
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        .section-head span:first-child { color: var(--mint); }
+        .section-head span:last-child { color: var(--sub); }
+
+        .tech-separator {
+            width: 100%;
+            height: 1px;
+            margin-bottom: 28px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            position: relative;
+        }
+        .tech-separator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 3px;
+            background: var(--mint);
+            box-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
         }
 
         #shortcuts {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
         }
 
         .shortcut {
-            width: 60px;
-            height: 60px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            border-radius: 15px;
-            background-color: rgba(0, 255, 65, 0.05);
-            box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
-            text-decoration: none;
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
+            gap: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            background: rgba(8, 8, 8, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s var(--ease);
+            position: relative;
+        }
+
+        .shortcut::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border: 1px solid transparent;
+            pointer-events: none;
+            transition: border-color 0.3s var(--ease);
         }
 
         .shortcut:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 16px rgba(0, 255, 65, 0.7);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .shortcut:hover::before {
+            border-color: var(--mint);
         }
 
-        .shortcut img {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+        .shortcut-icon {
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+            display: grid;
+            place-items: center;
+            background: var(--void);
+            border: 1px solid var(--border);
         }
 
-        #clock {
-            position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #2a2a2a;
-            font-size: 36px;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: none;
-            z-index: 1;
+        .shortcut-icon img {
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            filter: grayscale(1) brightness(0.9);
+            opacity: 0.7;
+            transition: all 0.3s var(--ease);
+        }
+        .shortcut:hover .shortcut-icon img {
+            filter: none;
+            opacity: 1;
         }
 
-        #anim-select {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: transparent;
-            color: rgba(0, 255, 65, 0.12);
-            border: 1px solid rgba(0, 255, 65, 0.06);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            outline: none;
-            cursor: pointer;
-            z-index: 2;
-            padding: 2px 6px;
-            transition: color 0.4s, border-color 0.4s;
-            appearance: none;
-            -webkit-appearance: none;
+        .shortcut-text {
+            min-width: 0;
+            flex: 1;
         }
 
-        #anim-select:hover, #anim-select:focus {
-            color: rgba(0, 255, 65, 0.75);
-            border-color: rgba(0, 255, 65, 0.4);
+        .shortcut-name {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: #fff;
         }
 
-        #anim-select option {
-            background: #000;
-            color: #00ff41;
+        .shortcut-url {
+            display: block;
+            margin-top: 4px;
+            font-size: 10px;
+            color: var(--sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .shortcut-index {
+            align-self: flex-start;
+            font-size: 10px;
+            color: #4b5563;
+            transition: color 0.3s var(--ease);
+        }
+        .shortcut:hover .shortcut-index { color: var(--mint); }
+
+        @media (max-width: 900px) {
+            main { padding: 40px 24px 32px; }
+            #anim-wrap { position: absolute; inset: 0; margin-right: 0; opacity: 0.35; }
         }
     </style>
 </head>
 <body>
 
-    <div id="anim-wrap">
-        <pre id="anim-pre"></pre>
-    </div>
+    <div id="grid"></div>
+    <div class="hud tl"></div>
+    <div class="hud tr"></div>
+    <div class="hud bl"></div>
+    <div class="hud br"></div>
 
-    <div id="shortcuts">
-        <a href="https://www.youtube.com" class="shortcut" target="_blank">
-            <img src="https://blog.youtube/static/blog_youtube/images/youtube_social_200x200.png" alt="YouTube">
-        </a>
-        <a href="https://www.github.com" class="shortcut" target="_blank">
-            <img src="https://github.com/fluidicon.png" alt="GitHub">
-        </a>
-        <a href="https://192.168.15.29:8006" class="shortcut" target="_blank">
-            <img src="https://192.168.15.29:8006/pve2/images/logo-128.png" alt="Proxmox">
-        </a>
-        <a href="http://192.168.15.115/" class="shortcut" target="_blank">
-            <img src="assets/Adguard_icon.png" alt="AdGuard">
-        </a>
-    </div>
+    <main>
+        <div class="hero">
+            <header>
+                <h1 id="clock">--:--</h1>
+                <p id="weekday">&nbsp;</p>
+                <p id="date">&nbsp;</p>
 
-    <div id="clock">--:--</div>
+                <div class="pve">
+                    <div class="section-head mono">
+                        <span id="pve-title">// Proxmox</span>
+                        <span id="pve-status">conectando…</span>
+                    </div>
+                    <div class="pve-meters" id="pve-meters"></div>
+                    <div class="pve-guests" id="pve-guests"></div>
+                </div>
+            </header>
+
+            <div id="anim-wrap">
+                <pre id="anim-pre"></pre>
+            </div>
+        </div>
+
+        <section>
+            <div class="tech-separator"></div>
+            <div class="section-head mono">
+                <span>// Atalhos</span>
+                <span>04 nós</span>
+            </div>
+            <div id="shortcuts">
+                <a href="https://www.youtube.com" class="shortcut" target="_blank">
+                    <span class="shortcut-icon"><img src="assets/youtube.svg" alt=""></span>
+                    <span class="shortcut-text">
+                        <span class="shortcut-name">YouTube</span>
+                        <span class="shortcut-url mono">youtube.com</span>
+                    </span>
+                    <span class="shortcut-index mono">01</span>
+                </a>
+                <a href="https://www.github.com" class="shortcut" target="_blank">
+                    <span class="shortcut-icon"><img src="assets/github.svg" alt=""></span>
+                    <span class="shortcut-text">
+                        <span class="shortcut-name">GitHub</span>
+                        <span class="shortcut-url mono">github.com</span>
+                    </span>
+                    <span class="shortcut-index mono">02</span>
+                </a>
+                <a href="https://192.168.15.29:8006" class="shortcut" target="_blank">
+                    <span class="shortcut-icon"><img src="assets/proxmox.svg" alt=""></span>
+                    <span class="shortcut-text">
+                        <span class="shortcut-name">Proxmox</span>
+                        <span class="shortcut-url mono">192.168.15.29:8006</span>
+                    </span>
+                    <span class="shortcut-index mono">03</span>
+                </a>
+                <a href="http://192.168.15.115/" class="shortcut" target="_blank">
+                    <span class="shortcut-icon"><img src="assets/adguard.svg" alt=""></span>
+                    <span class="shortcut-text">
+                        <span class="shortcut-name">AdGuard</span>
+                        <span class="shortcut-url mono">192.168.15.115</span>
+                    </span>
+                    <span class="shortcut-index mono">04</span>
+                </a>
+            </div>
+        </section>
+    </main>
 
     <!--
     <select id="anim-select">
         <option value="cube">cube</option>
-        <option value="skull">skull</option>
     </select>
     -->
 
     <script src="clock.js"></script>
     <script src="cube.js"></script>
     <script src="main.js"></script>
+    <script src="config.js"></script>
+    <script src="proxmox.js"></script>
 </body>
 </html>
